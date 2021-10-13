@@ -1,37 +1,63 @@
 
 let cameraPosYeah = [0,0,0];
-function GetModelViewMatrix( translationX, translationY, translationZ, rotationX, rotationY )
+
+let posX = 0;
+let posY = 0;
+let posZ = 0;
+
+function GetModelViewMatrix( translationX, translationY, translationZ, rotationX, rotationY)
 {
-	// [COMPLETAR] Modificar el código para formar la matriz de transformación.
-	cameraPosYeah = [translationX, translationY, translationZ];
-	// Matriz de traslación
+	var cy = Math.cos(rotationY);
+	var sy = Math.sin(rotationY);
+    var guinada =[ // Column major
+		cy, 0, -1*sy, 0,
+		0 , 1, 0    , 0,
+		sy, 0, cy   , 0,
+		0 , 0, 0    , 1
+    ];
+
+	var cx = Math.cos(rotationX);
+	var sx = Math.sin(rotationX);
+    var cabeceo =[ // Column major
+		1, 0    , 0 , 0,
+		0, cx   , sx, 0,
+		0, -1*sx, cx, 0,
+		0, 0    , 0 , 1
+    ];	
+	var rotForObject = MatrixMult(cabeceo, guinada)  // obtiene la coordenada en espacio local pra una coordenada en espacio global, "para donde queda esta coordenada"
+    var rotFromCamera = MatrixMult(guinada, cabeceo) // obtiene la coordenada en espacio global para una coordenada en espacio local, "hacia donde estoy mirando"
+
+
+	// First person based movement
+	var globalMovement = [translationX, 0, translationZ,1];
+	var cameraMovement = MatrixVectorMult(rotFromCamera, globalMovement)	
+
+	posX -= cameraMovement[0];
+	// Elevation is based on global axis
+	posY -= cameraMovement[1] - translationY; 
+	posZ += cameraMovement[2];
 	var trans = [
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
-		translationX, translationY, translationZ, 1
+		posX, posY, posZ, 1
 	];
 
-	rotacionXgrad = -1*rotationX
-    rotacionYgrad = -1*rotationY
+//    var mv = MatrixMult(trans,rot) // Original rotate around
+	var mv = MatrixMult(rotForObject, trans) 
 
-    var guinada =[
-    Math.cos(rotacionYgrad),0,Math.sin(rotacionYgrad),0,
-    0,1,0,0,
-    -1*Math.sin(rotacionYgrad),0,Math.cos(rotacionYgrad),0,
-    0,0,0,1
-    ];
-
-    var cabeceo =[
-    1,0,0,0,
-    0,Math.cos(rotacionXgrad),-1*Math.sin(rotacionXgrad),0,
-    0,Math.sin(rotacionXgrad),Math.cos(rotacionXgrad),0,
-    0,0,0,1
-    ];
-
-    var rot = MatrixMult(cabeceo, guinada)
-    var mv = MatrixMult(trans,rot)
 	return mv;
+}
+
+printvect = (vec) => {
+	console.log(vec[0], vec[1], vec[2], vec[3])
+}
+
+printmatrix = (mat) => {
+	console.log(mat[0], mat[1], mat[2], mat[3])
+	console.log(mat[4], mat[5], mat[6], mat[7])
+	console.log(mat[8], mat[9], mat[10], mat[11])
+	console.log(mat[12], mat[13], mat[14], mat[15])
 }
 
 // [COMPLETAR] Completar la implementación de esta clase.
@@ -234,8 +260,8 @@ var meshVS = `
 		normCoord = normals;
 
 		vertCoord = pos;
-		cameraDir = vec3(mv * vec4(pos,1));
-		gl_Position = mvp * vec4(pos,1);
+		cameraDir = vec3(mvp * vec4(pos,1));
+		gl_Position = mvp * vec4(vec3(1,1,1) * pos,1);
 	}
 `;
 
@@ -267,32 +293,7 @@ var meshFS = `
 
 	void main()
 	{		
-		/*
-		vec3 tNormal = mn * normCoord;
-		float cosTheta = dot(tNormal, lightDir);
-
-		vec3 r = -lightDir + 2.0 * tNormal * cosTheta;
-		vec3 v = normalize(vec3(vertCoord));
-		float cosSigma = dot(r, v);
-		
-		vec3 h = normalize(lightDir + v);
-		float cosOmega = dot(tNormal, h);
-
-
-		vec3 Kd = vec3(1.0,1.0,1.0);
-		if(showTexture){
-			Kd = texture2D(texGPU,texCoord).xyz;
-		}
-		vec3 Ks = vec3(1.0,1.0,1.0);
-		vec3 I = vec3(1.0,1.0,1.0);
-		vec3 Ka = vec3(1.0,0.8,0.8);
-		float Ia = 0.2;
-
-
-		vec3 result = I * max(0.0, cosTheta) * (Kd + (Ks * pow(max(0.0, cosOmega), alpha))/cosTheta) + Ia *Ka;
-
-		*/
-
+	
 		float floorHeight = 0.5;
 		
 		float currentCeiling = ceil(vertCoord.y / floorHeight);
@@ -334,10 +335,18 @@ var meshFS = `
 		}
 
 		//gl_FragColor = vec4(cameraPos.z, 0, 0, 1);
-		gl_FragColor = vec4(vertCoord.x, 0, vertCoord.z, 1);
+		//gl_FragColor = vec4(vertCoord.x, 0, vertCoord.z, 1);
 		//gl_FragColor = vec4(cameraDir.x, cameraDir.y, 0, 1);	
 		
 
+
+
+
+
+		vec3 cameraSpaceVert = cameraDir;
+
+		gl_FragColor = vec4(abs(cameraDir.x), 0, abs(cameraDir.y), 1);
 		
 	}
 `;
+

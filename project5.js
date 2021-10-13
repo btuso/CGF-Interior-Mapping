@@ -4,7 +4,7 @@ var meshDrawer;         // clase para contener el comportamiento de la malla
 var canvas, gl;         // canvas y contexto WebGL
 var perspectiveMatrix;	// matriz de perspectiva
 
-var rotX=0, rotY=0, transZ=3, autorot=0, transX=0, transY=0;
+var rotX=0, rotY=0, transZ=0, autorot=0, transX=0, transY=0;
 
 // Funcion de inicialización, se llama al cargar la página
 function InitWebGL()
@@ -60,7 +60,7 @@ function ProjectionMatrix( c, z, fov_angle=40 )
 {
 	var r = c.width / c.height;
 	//var n = (z - 1.74);
-	const VIEW_DISTANCE = 10;
+	const VIEW_DISTANCE = 20;
 	var n = (z - VIEW_DISTANCE);
 	const min_n = 0.001;
 	if ( n < min_n ) n = min_n;
@@ -69,10 +69,10 @@ function ProjectionMatrix( c, z, fov_angle=40 )
 	var fov = 3.145 * fov_angle / 180;
 	var s = 1 / Math.tan( fov/2 );
 	return [
-		s/r, 0, 0, 0,
-		0, s, 0, 0,
-		0, 0, (n+f)/(f-n), 1,
-		0, 0, -2*n*f/(f-n), 0
+		s/r, 0, 0           , 0,
+		0  , s, 0           , 0,
+		0  , 0, (n+f)/(f-n) , 1,
+		0  , 0, -2*n*f/(f-n), 0
 	];
 }
 
@@ -85,8 +85,8 @@ function UpdateProjectionMatrix()
 // Funcion que reenderiza la escena. 
 function DrawScene()
 {
-	// 1. Obtenemos las matrices de transformación 
-	var mv  = GetModelViewMatrix( transX, transY, transZ, rotX, autorot+rotY );
+	// 1. Obtenemos las matrices de transformación
+	var mv  = GetModelViewMatrix( transX, transY, transZ, rotX, autorot+rotY);
 	var mvp = MatrixMult( perspectiveMatrix, mv );
 
 	// 2. Limpiamos la escena
@@ -144,8 +144,9 @@ function CompileShader( type, source, wgl=gl )
 	return shader;
 }
 
-// Multiplica 2 matrices y devuelve A*B.
+// Multiplica 2 matrices column major y devuelve B*A, lo que equivale a A*B en matrices row major.
 // Los argumentos y el resultado son arreglos que representan matrices en orden column-major
+// Por propiedades de matrices, (A*B)^t = B^t * A^t. Al estar en column major tomamos A = A^t y B = B^t, luego invertimos el orden de multiplicacion.
 function MatrixMult( A, B )
 {
 	var C = [];
@@ -161,6 +162,22 @@ function MatrixMult( A, B )
 
 			C.push(v);
 		}
+	}
+	return C;
+}
+// Multiplica 2 matrices y devuelve A*u.
+// Los matriz se espera en orden column-major, el vector esperado y el resultado son vectores comunes
+function MatrixVectorMult (A, u) {
+	var C = [];
+	for ( var j=0; j<4; ++j ) 
+	{
+		var v = 0;
+		for ( var k=0; k<4; ++k ) 
+		{
+			v += A[j+4*k] * u[k];
+		}
+
+		C.push(v);
 	}
 	return C;
 }
@@ -226,10 +243,11 @@ window.onload = function()
 				rotX += (cy - event.clientY)/canvas.height*5;
 				cx = event.clientX;
 				cy = event.clientY;
-				UpdateProjectionMatrix();
+				UpdateProjectionMatrix();	
 				DrawScene();
 			}
 		}
+
 	}
 
 	// Allow canvas to handle keyboard events
@@ -237,7 +255,41 @@ window.onload = function()
 	// Prevent white outline from showing on keypress
 	canvas.style.outline = "none";
 	canvas.onkeydown  = (e) => {
+		const speed = 0.5;
+		transX = 0;
+		transY = 0;
+		transZ = 0;
+		switch (event.key) {
+			case 'w':
+				console.log('w')
+				transZ = -speed;
+				break;
+			case 'a':
+				console.log('a')
+				transX = -speed;
+				break;
+			case 's':
+				console.log('s')
+				transZ = speed;
+				break;
+			case 'd':
+				console.log('d')
+				transX = speed;
+				break;
+			case ' ':
+				console.log('space');
+				transY = -speed;
+				break;
+			case 'Control':
+				console.log('control')
+				transY = speed;
+		}
+		UpdateProjectionMatrix();
+		DrawScene();
 		dragging = true;
+		transX = 0;
+		transY = 0;
+		transZ = 0;
 	}
 
 	canvas.onkeyup = (e) => {

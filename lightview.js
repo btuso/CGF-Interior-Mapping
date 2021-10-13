@@ -165,7 +165,9 @@ class LightView
 		this.gl.uniform3f( this.clr2, 0,0,0 );
 		this.gl.drawArrays( this.gl.TRIANGLE_STRIP, 0, this.resCircle*2+2 );
 
-		var mv  = GetModelViewMatrix( 0, 0, this.posZ, this.rotX, this.rotY );
+		
+//		var mv  = GetModelViewMatrix( 0, 0, this.posZ, this.rotX, this.rotY ); TODO cambie esto para que no pise el transZ, es para que funcione bien el selector de luz
+		var mv  = GetModelViewMatrix( 0, 0, 0, this.rotX, this.rotY );
 		var mvp = MatrixMult( this.proj, mv );
 		this.gl.uniformMatrix4fv( this.mvp, false, mvp );
 		this.gl.uniform3f( this.clr1, 1,1,1 );
