@@ -24,8 +24,10 @@ function GetModelViewMatrix( translationX, translationY, translationZ, rotationX
 		0, -1*sx, cx, 0,
 		0, 0    , 0 , 1
     ];	
-	var rotForObject = MatrixMult(cabeceo, guinada)  // obtiene la coordenada en espacio local pra una coordenada en espacio global, "para donde queda esta coordenada"
-    var rotFromCamera = MatrixMult(guinada, cabeceo) // obtiene la coordenada en espacio global para una coordenada en espacio local, "hacia donde estoy mirando"
+	// obtiene la coordenada en espacio local pra una coordenada en espacio global, "para donde queda esta coordenada"
+	var rotForObject = MatrixMult(cabeceo, guinada)  
+	// obtiene la coordenada en espacio global para una coordenada en espacio local, "hacia donde estoy mirando"
+    var rotFromCamera = MatrixMult(guinada, cabeceo) 
 
 
 	// First person based movement

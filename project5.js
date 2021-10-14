@@ -1,10 +1,9 @@
 // Estructuras globales e inicializaciones
-var boxDrawer;          // clase para contener el comportamiento de la caja
 var meshDrawer;         // clase para contener el comportamiento de la malla
 var canvas, gl;         // canvas y contexto WebGL
 var perspectiveMatrix;	// matriz de perspectiva
 
-var rotX=0, rotY=0, transZ=0, autorot=0, transX=0, transY=0;
+var rotX=0, rotY=0, transZ=0, transX=0, transY=0;
 
 // Funcion de inicialización, se llama al cargar la página
 function InitWebGL()
@@ -24,7 +23,6 @@ function InitWebGL()
 	gl.enable(gl.DEPTH_TEST); // habilitar test de profundidad 
 	
 	// Inicializar los shaders y buffers para renderizar	
-	boxDrawer  = new BoxDrawer();
 	meshDrawer = new MeshDrawer();
 	
 	// Setear el tamaño del viewport
@@ -86,7 +84,7 @@ function UpdateProjectionMatrix()
 function DrawScene()
 {
 	// 1. Obtenemos las matrices de transformación
-	var mv  = GetModelViewMatrix( transX, transY, transZ, rotX, autorot+rotY);
+	var mv  = GetModelViewMatrix( transX, transY, transZ, rotX, rotY);
 	var mvp = MatrixMult( perspectiveMatrix, mv );
 
 	// 2. Limpiamos la escena
@@ -95,9 +93,6 @@ function DrawScene()
 	// 3. Le pedimos a cada objeto que se dibuje a si mismo
 	var nrmTrans = [ mv[0],mv[1],mv[2], mv[4],mv[5],mv[6], mv[8],mv[9],mv[10] ];
 	meshDrawer.draw( mvp, mv, nrmTrans );
-	if ( showBox.checked ) {
-		boxDrawer.draw( mvp );
-	}
 }
 
 // Función que compila los shaders que se le pasan por parámetro (vertex & fragment shaders)
@@ -184,70 +179,33 @@ function MatrixVectorMult (A, u) {
 
 // ======== Funciones para el control de la interfaz ========
 
-var showBox;  // boleano para determinar si se debe o no mostrar la caja
-var dragging = false;
 var lastMousePos;
 
 // Al cargar la página
 window.onload = function() 
 {
-	showBox = document.getElementById('show-box');
 	InitWebGL();
 	
 	// Componente para la luz
 	lightView = new LightView();
-
-	// Evento de zoom (ruedita)
-	canvas.zoom = function( s ) 
-	{
-		transZ *= s/canvas.height + 1;
-		UpdateProjectionMatrix();
-		DrawScene();
-	}
-	canvas.onwheel = function() { canvas.zoom(0.3*event.deltaY); }
 
 	// Evento de click 
 	canvas.onmousedown = function() 
 	{
 		var cx = event.clientX;
 		var cy = event.clientY;
-		if ( event.ctrlKey ) 
+		
+		// Si se mueve el mouse, actualizo las matrices de rotación
+		canvas.onmousemove = function() 
 		{
-			canvas.onmousemove = function() 
-			{
-				canvas.zoom(5*(event.clientY - cy));
-				cy = event.clientY;
-			}
+			rotY += (cx - event.clientX)/canvas.width*5;
+			rotX += (cy - event.clientY)/canvas.height*5;
+			cx = event.clientX;
+			cy = event.clientY;
+			UpdateProjectionMatrix();	
+			DrawScene();
 		}
-		else if (event.shiftKey) {
-			canvas.onmousemove = (e) => {
-				let currentMousePos = { x: e.clientX, y: e.clientY };
-
-				if (lastMousePos == null || lastMousePos == currentMousePos) {
-					lastMousePos = currentMousePos;
-					return;
-				}
-				transX += (e.clientX - lastMousePos.x) * 0.01 * (transZ/15); // Speed is adjusted based on zoom/camera distance
-				transY -= (e.clientY - lastMousePos.y) * 0.01 * (transZ/15);
-				lastMousePos = currentMousePos;
-				UpdateProjectionMatrix();
-				DrawScene();
-			}
-		} 
-		else 
-		{   
-			// Si se mueve el mouse, actualizo las matrices de rotación
-			canvas.onmousemove = function() 
-			{
-				rotY += (cx - event.clientX)/canvas.width*5;
-				rotX += (cy - event.clientY)/canvas.height*5;
-				cx = event.clientX;
-				cy = event.clientY;
-				UpdateProjectionMatrix();	
-				DrawScene();
-			}
-		}
-
+	
 	}
 
 	// Allow canvas to handle keyboard events
@@ -261,27 +219,23 @@ window.onload = function()
 		transZ = 0;
 		switch (event.key) {
 			case 'w':
-				console.log('w')
 				transZ = -speed;
 				break;
 			case 'a':
-				console.log('a')
 				transX = -speed;
 				break;
 			case 's':
-				console.log('s')
 				transZ = speed;
 				break;
 			case 'd':
-				console.log('d')
 				transX = speed;
 				break;
 			case ' ':
-				console.log('space');
+			case 'e':
 				transY = -speed;
 				break;
 			case 'Control':
-				console.log('control')
+			case 'q':
 				transY = speed;
 		}
 		UpdateProjectionMatrix();
@@ -290,10 +244,6 @@ window.onload = function()
 		transX = 0;
 		transY = 0;
 		transZ = 0;
-	}
-
-	canvas.onkeyup = (e) => {
-		dragging = false;
 	}
 
 	// Evento soltar el mouse
@@ -313,40 +263,6 @@ window.onload = function()
 function WindowResize()
 {
 	UpdateCanvasSize();
-	DrawScene();
-}
-
-// Control de la calesita de rotación
-var timer;
-function AutoRotate( param )
-{
-	// Si hay que girar...
-	if ( param.checked ) 
-	{
-		// Vamos rotando una cantiad constante cada 30 ms
-		timer = setInterval( function() 
-		{
-				var v = document.getElementById('rotation-speed').value;
-				autorot += 0.0005 * v;
-				if ( autorot > 2*Math.PI ) autorot -= 2*Math.PI;
-
-				// Reenderizamos
-				DrawScene();
-			}, 30
-		);
-		document.getElementById('rotation-speed').disabled = false;
-	} 
-	else 
-	{
-		clearInterval( timer );
-		document.getElementById('rotation-speed').disabled = true;
-	}
-}
-
-// Control de textura visible
-function ShowTexture( param )
-{
-	meshDrawer.showTexture( param.checked );
 	DrawScene();
 }
 
