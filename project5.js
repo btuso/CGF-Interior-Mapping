@@ -54,9 +54,9 @@ function UpdateCanvasSize()
 }
 
 // Calcula la matriz de perspectiva (column-major)
-function ProjectionMatrix( c, z, fov_angle=40 )
+function ProjectionMatrix( canvas, z, fov_angle=40 )
 {
-	var r = c.width / c.height;
+	var r = canvas.width / canvas.height;
 	//var n = (z - 1.74);
 	const VIEW_DISTANCE = 20;
 	var n = (z - VIEW_DISTANCE);
@@ -186,9 +186,6 @@ window.onload = function()
 {
 	InitWebGL();
 	
-	// Componente para la luz
-	lightView = new LightView();
-
 	// Evento de click 
 	canvas.onmousedown = function() 
 	{
@@ -212,12 +209,12 @@ window.onload = function()
 	canvas.tabIndex = 1000;
 	// Prevent white outline from showing on keypress
 	canvas.style.outline = "none";
-	canvas.onkeydown  = (e) => {
+	window.onkeydown  = (e) => {
 		const speed = 0.5;
 		transX = 0;
 		transY = 0;
 		transZ = 0;
-		switch (event.key) {
+		switch (e.key) {
 			case 'w':
 				transZ = -speed;
 				break;
@@ -252,9 +249,7 @@ window.onload = function()
 		canvas.onmousemove = null;
 		lastMousePos = null;
 	}
-	
-	SetShininess( document.getElementById('shininess-exp') );
-	
+		
 	// Dibujo la escena
 	DrawScene();
 };
@@ -318,15 +313,5 @@ function LoadTexture( param )
 		};
 		reader.readAsDataURL( param.files[0] );
 	}
-}
-
-// Setear Intensidad
-function SetShininess( param )
-{
-	var exp = param.value;
-	var s = Math.pow(10,exp/25);
-	document.getElementById('shininess-value').innerText = s.toFixed( s < 10 ? 2 : 0 );
-	meshDrawer.setShininess(s);
-	DrawScene();
 }
 
