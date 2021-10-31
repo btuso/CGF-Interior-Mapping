@@ -1,8 +1,10 @@
 let inputCreated = false;
 
+const MOUSE_SENSITIVITY = 2.5;
+
 class InputSystem {
 
-    constructor(window, inputMapping) {
+    constructor(window, inputMapping, screenSize) {
         if (inputCreated)
             throw Error('Input system is already initialized.');
 
@@ -12,14 +14,17 @@ class InputSystem {
         if (!inputMapping)
             throw Error('Input mapping must be defined when creating Input system.')
 
-        this.currentMousePosition = {};
+        this.mouseClick = { currentlyClicking: false, clickedInLastFrame: false };
+        this.currentMouseMovement = { x: 0, y: 0 };
         this.mouseX = 0;
         this.mouseY = 0;
 
         this.currentInput = this._createInputState(inputMapping);
         this._registerKeys(window, inputMapping);
-        this._registerMouseMovement(window, this.currentMousePosition);
+        this._registerMouseMovement(window, this.currentMouseMovement);
+        this._registerMouseClick(window, this.mouseClick);
         this._exportActions(inputMapping);
+        this.screenSize = screenSize;
         inputCreated = true;
     };
 
@@ -55,6 +60,49 @@ class InputSystem {
         return mappings;    
     };
    
+    _registerMouseMovement = (window, currentMouseMovement) => {
+        window.onmousemove = function(e) 
+		{
+            currentMouseMovement.x += e.movementX;
+            currentMouseMovement.y -= e.movementY;
+		}
+    };
+    
+    _registerMouseClick = (window, mouseClick) => {
+        window.onmousedown  = function(e) 
+		{
+            mouseClick.clickedInLastFrame = true;
+		}
+    };
+
+    pollInputs = () => {
+        this.mouseX = this.currentMouseMovement.x;
+        this.mouseY = this.currentMouseMovement.y;
+        this.currentMouseMovement.x = 0;
+        this.currentMouseMovement.y = 0;
+        
+        this.mouseClick.currentlyClicking = this.mouseClick.clickedInLastFrame;
+        this.mouseClick.clickedInLastFrame = false;
+    };
+
+    mouseXMovement = () => {
+        return this.mouseX / this.screenSize.width * MOUSE_SENSITIVITY;
+    };
+    
+    mouseYMovement = () => {
+        return this.mouseY / this.screenSize.height * MOUSE_SENSITIVITY;
+    };
+
+    mouseWasClicked = () => {
+        return this.mouseClick.currentlyClicking;
+    };
+
+    updateScreenSize(width, height) {
+        this.currentMouseMovement.x = 0;
+        this.currentMouseMovement.y = 0;
+        this.screenSize = { width, height };
+    };
+
     _exportActions = (inputMapping) => {
         const actions = Object.keys(inputMapping);
         for (let action of actions) {
@@ -62,35 +110,6 @@ class InputSystem {
         }
     };
 
-    _registerMouseMovement = (window, currentMousePosition) => {
-        window.onmousemove = function(e) 
-		{
-            currentMousePosition.x = e.clientX;
-			currentMousePosition.y = e.clientY;
-		}
-    };
-
-    pollInputs = () => {
-        if (this.currentMousePosition.x == null) {
-            // Mouse hasn't been moved yet
-            return;
-        }
-        
-        if (this.previousMousePosition == null) {
-            this.previousMousePosition = { ...this.currentMousePosition };
-        }
-        this.mouseX = this.currentMousePosition.x - this.previousMousePosition.x;
-        this.mouseY = this.currentMousePosition.y - this.previousMousePosition.y;
-        this.previousMousePosition = { ...this.currentMousePosition };
-    };
-
-    mouseXMovement = () => {
-        return this.mouseX;
-    };
-    
-    mouseYMovement = () => {
-        return this.mouseY;
-    };
 };
 
 

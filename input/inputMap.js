@@ -5,5 +5,6 @@ const INPUT_MAP = {
     STRAFE_RIGHT: ['d'],
     ASCEND: ['e', ' '],
     DESCEND: ['q', 'ctrl'],
+    INFO: ['i'],
 };
 

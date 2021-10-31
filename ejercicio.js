@@ -31,7 +31,7 @@ function GetModelViewMatrix( translationX, translationY, translationZ, rotationX
     var rotFromCamera = MatrixMult(guinada, cabeceo) 
 
 
-	// First person based movement
+	// First person based movement, we ignore translationY so upwards movement is global instead of camera based
 	var globalMovement = [translationX, 0, translationZ,1];
 	var cameraMovement = MatrixVectorMult(rotFromCamera, globalMovement)	
 	
@@ -77,7 +77,7 @@ class MeshDrawer
 	constructor()
 	{
 		// [COMPLETAR] inicializaciones
-
+		
 		// 1. Compilamos el programa de shaders
 		this.prog   = InitShaderProgram( meshVS, meshFS );
 		// 2. Obtenemos los IDs de las variables uniformes en los shaders
@@ -113,7 +113,7 @@ class MeshDrawer
 	setMesh( vertPos, texCoords )
 	{
 		// [COMPLETAR] Actualizar el contenido del buffer de vértices y otros atributos..
-		this.numTriangles = vertPos.length / 3 / 3;
+		this.numTriangles = vertPos.length / 3;
 		
 		// 1. Binding y seteo del buffer de vértices
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertbuffer);
@@ -147,8 +147,8 @@ class MeshDrawer
 		// 4. Habilitar atributos: vértices, normales, texturas
 		// verts
 		gl.bindBuffer( gl.ARRAY_BUFFER, this.vertbuffer );
-		gl.vertexAttribPointer( this.vertPos, 3, gl.FLOAT, false, 0, 0 ); //TODO this should come after enabling. test it https://webglfundamentals.org/docs/module-webgl-utils.html#.setBuffersAndAttributes
 		gl.enableVertexAttribArray( this.vertPos );
+		gl.vertexAttribPointer( this.vertPos, 3, gl.FLOAT, false, 0, 0 ); 
 
 
 		// 4. Flags
@@ -158,7 +158,7 @@ class MeshDrawer
 		gl.uniformMatrix4fv(this.rotFromCameraUniform, false, rotFromCameraU);
 		
 		// Dibujamos
-		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles * 3 );
+		gl.drawArrays( gl.TRIANGLES, 0, this.numTriangles);
 
 		
 	}
@@ -189,10 +189,7 @@ var meshVS = `
 		tempCameraDir.z = tempCameraDir.z * - 1.0;
 		tempCameraDir = normalize(tempCameraDir);
 		tempCameraDir.w = 1.0;
-	//	relativeCameraDir = vec3(tempCameraDir);
 		relativeCameraDir = vec3(rotationFromCamera * tempCameraDir);
-		//relativeCameraDir = vec3(mvp * vec4(pos,1));
-
 	}
 `;
 
@@ -259,6 +256,7 @@ var meshFS = `
 		 
 		gl_FragColor = vec4(0, 0,relativeCameraDir.y + globalCameraDir.y, 1);
 		//gl_FragColor = vec4(0, vertCoord.x,0, 1);
+		//gl_FragColor = vec4(0, 0, 0.7, 1);
 		
 	}
 `;
