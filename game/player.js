@@ -9,9 +9,11 @@ class Player {
     };
 
     update(delta) {
-        const speed = delta * PLAYER_SPEED;
+        let speed = delta * PLAYER_SPEED;
 		let translationX = 0, translationY = 0, translationZ = 0;
-
+        if (Input.IS_ACCELERATE()){
+            speed *= 2.5;
+        }
         if (Input.IS_FORWARD()) {
             translationZ -= speed;
         }

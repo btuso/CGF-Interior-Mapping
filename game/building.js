@@ -12,14 +12,14 @@ class Building {
         const zMiddle = (width / 2);
         
         const vertices = [
-            [xMiddle, yMiddle,   -zMiddle + position[2]], 
-            [xMiddle, -yMiddle,  -zMiddle + position[2]], 
-            [xMiddle, yMiddle,    zMiddle + position[2]], 
-            [xMiddle, -yMiddle,   zMiddle + position[2]], 
-            [-xMiddle, yMiddle,  -zMiddle + position[2]], 
-            [-xMiddle, -yMiddle, -zMiddle + position[2]], 
-            [-xMiddle, yMiddle,   zMiddle + position[2]], 
-            [-xMiddle, -yMiddle,  zMiddle + position[2]], 
+            [xMiddle + position[0], yMiddle + position[1],   -zMiddle + position[2]], 
+            [xMiddle + position[0], -yMiddle + position[1],  -zMiddle + position[2]], 
+            [xMiddle + position[0], yMiddle + position[1],    zMiddle + position[2]], 
+            [xMiddle + position[0], -yMiddle + position[1],   zMiddle + position[2]], 
+            [-xMiddle + position[0], yMiddle + position[1],  -zMiddle + position[2]], 
+            [-xMiddle + position[0], -yMiddle + position[1], -zMiddle + position[2]], 
+            [-xMiddle + position[0], yMiddle + position[1],   zMiddle + position[2]], 
+            [-xMiddle + position[0], -yMiddle + position[1],  zMiddle + position[2]], 
         ];
 
         const faces = [
@@ -57,7 +57,7 @@ class Building {
     };
 
     getShader() {
-        return Shaders.BUILDING;
+        return Shaders.INTERIOR;
     };
 
     getShaderData() {

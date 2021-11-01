@@ -4,7 +4,8 @@ const INPUT_MAP = {
     STRAFE_LEFT: ['a'],
     STRAFE_RIGHT: ['d'],
     ASCEND: ['e', ' '],
-    DESCEND: ['q', 'ctrl'],
+    DESCEND: ['q', 'Control'],
+    ACCELERATE: ['Shift'],
     INFO: ['i'],
 };
 

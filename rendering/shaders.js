@@ -1,5 +1,6 @@
 const Shaders = {
-    BUILDING: new TestShader(),
+    TEST: new TestShader(),
+    INTERIOR: new InteriorShader(),
 };
 
 function createShader(gl, type, source) {
