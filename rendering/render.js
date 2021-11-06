@@ -67,7 +67,7 @@ class RenderingSystem {
     }
 
     draw(camera, sceneTree) {
-        this.gl.clear( this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT );
+        this.gl.clear( this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT ); //TODO what does this do?
         for (let node of sceneTree) {
             const shader = node.getShader();
             shader.setData(node.getShaderData());

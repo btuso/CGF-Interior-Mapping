@@ -240,13 +240,13 @@ var meshFS = `
 		float horizontalPlaneDistance = dot(pointInHorizontalPlane - cameraPos, planeNormal) / dot(relativeCameraDir, planeNormal);
 		vec3 horizontalIntersection = horizontalPlaneDistance * relativeCameraDir;
 
-				
+			/*	
 		float currentWall = ceil(vertCoord.x / floorWidth);
 		vec3 pointInWallPlane = vec3(currentWall * floorWidth, 0, 0);
 		vec3 wallNormal = vec3(1, 0, 0);
 		float wallDistance = dot(pointInWallPlane - cameraPos, wallNormal) / dot(relativeCameraDir, wallNormal);
 		vec3 wallIntersection = wallDistance * relativeCameraDir;
-		
+			*/		
 
 
 

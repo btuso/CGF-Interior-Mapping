@@ -20,16 +20,25 @@ class TestShader {
         // create buffers and uniforms
         this.mvp = gl.getUniformLocation(this.program, 'mvp' );
         
-		this.vertexPostion = gl.getAttribLocation( this.program, 'vertex_position' );
+        this.worldTransformUniform = gl.getUniformLocation(this.program, 'worldTransform' );
+		this.vertexPostion = gl.getAttribLocation( this.program, 'vertexPosition' );
 		this.vertexBuffer = gl.createBuffer();
         this.initialized = true;
     };
 
-    setData(bufferData) {
-        this.numberOfVertices = bufferData.length / 3;
+    setData(objectData) {
+        const vertices = objectData.vertices;
+        this.numberOfVertices = vertices.length / 3;
         // update the buffers        
 		this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
-		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(bufferData), this.gl.STATIC_DRAW);
+		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+
+        this.worldTransformMatrix =  [
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            objectData.position[0], objectData.position[1], -objectData.position[2], 1
+        ];
     };
 
     setCamera(camera){
@@ -93,6 +102,7 @@ class TestShader {
 		this.gl.useProgram( this.program );		
 
         this.gl.uniformMatrix4fv( this.mvp, false, this.mvpMatrix );
+        this.gl.uniformMatrix4fv(this.worldTransformUniform, false, this.worldTransformMatrix);
 
 		this.gl.bindBuffer( this.gl.ARRAY_BUFFER, this.vertexBuffer );
 		this.gl.enableVertexAttribArray( this.vertexPostion );
@@ -102,12 +112,13 @@ class TestShader {
     };
 
     _VertexShader = `
-        attribute vec3 vertex_position;
+        attribute vec3 vertexPosition;
         uniform mat4 mvp;
+        uniform mat4 worldTransform;
 
         void main()
         { 
-            gl_Position = mvp * vec4(vertex_position,1);
+            gl_Position = mvp * worldTransform * vec4(vertexPosition,1);
         }
     `;
 

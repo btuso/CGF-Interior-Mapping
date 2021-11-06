@@ -1,25 +1,25 @@
 class Building {
 
-    constructor(position, direction, width, height) {
+    constructor(position, direction, width, height, depth) {
         this.position = position;
         this.direction = direction;
-        this._createBuilding(position, width, height);
+        this._createBuilding(width, height, depth);
     };
 
-    _createBuilding(position, width, height) {
+    _createBuilding(width, height, depth) {
         const xMiddle = (width / 2);
         const yMiddle = (height / 2)
-        const zMiddle = (width / 2);
+        const zMiddle = (depth / 2);
         
         const vertices = [
-            [xMiddle + position[0], yMiddle + position[1],   -zMiddle + position[2]], 
-            [xMiddle + position[0], -yMiddle + position[1],  -zMiddle + position[2]], 
-            [xMiddle + position[0], yMiddle + position[1],    zMiddle + position[2]], 
-            [xMiddle + position[0], -yMiddle + position[1],   zMiddle + position[2]], 
-            [-xMiddle + position[0], yMiddle + position[1],  -zMiddle + position[2]], 
-            [-xMiddle + position[0], -yMiddle + position[1], -zMiddle + position[2]], 
-            [-xMiddle + position[0], yMiddle + position[1],   zMiddle + position[2]], 
-            [-xMiddle + position[0], -yMiddle + position[1],  zMiddle + position[2]], 
+            [xMiddle, yMiddle,   -zMiddle], 
+            [xMiddle, -yMiddle,  -zMiddle], 
+            [xMiddle, yMiddle,    zMiddle], 
+            [xMiddle, -yMiddle,   zMiddle], 
+            [-xMiddle, yMiddle,  -zMiddle], 
+            [-xMiddle, -yMiddle, -zMiddle], 
+            [-xMiddle, yMiddle,   zMiddle], 
+            [-xMiddle, -yMiddle,  zMiddle], 
         ];
 
         const faces = [
@@ -44,7 +44,6 @@ class Building {
             }
         }
 
-
         this.vertexPositions = triangles;
     };
 
@@ -61,6 +60,10 @@ class Building {
     };
 
     getShaderData() {
-        return this.vertexPositions;
+        return { 
+            vertices: this.vertexPositions, 
+            direction: this.direction,
+            position: this.position,
+        };
     };
 }
