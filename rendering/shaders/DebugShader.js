@@ -1,5 +1,5 @@
 
-class InteriorShader {
+class DebugShader {
 
     constructor() {
         // WebGl is not yet loaded when the shader objects are created
@@ -178,6 +178,11 @@ class InteriorShader {
 
             // multiply by 1.00001 to get rid of precision errors from interpolation
             float currentWall = ceil((vertexGlobalCoord.x * 1.00001) / floorWidth) - wallOffset;
+            
+            // Make the wall closest to the camera disappear
+            if (cameraDir.x > 0.0 && currentWall == 0.0) {
+                currentWall = currentWall + 1.0;
+            }
             
             vec3 pointInWallPlane = vec3(currentWall * floorWidth, 0.0, 0.0);
             vec3 wallNormal = vec3(-1.0, 0.0, 0.0); // TODO esto es lo que hay que cambiar por building direction?

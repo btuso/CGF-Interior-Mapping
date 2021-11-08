@@ -7,19 +7,15 @@ class Building {
     };
 
     _createBuilding(width, height, depth) {
-        const xMiddle = (width / 2);
-        const yMiddle = (height / 2)
-        const zMiddle = (depth / 2);
-        
         const vertices = [
-            [xMiddle, yMiddle,   -zMiddle], 
-            [xMiddle, -yMiddle,  -zMiddle], 
-            [xMiddle, yMiddle,    zMiddle], 
-            [xMiddle, -yMiddle,   zMiddle], 
-            [-xMiddle, yMiddle,  -zMiddle], 
-            [-xMiddle, -yMiddle, -zMiddle], 
-            [-xMiddle, yMiddle,   zMiddle], 
-            [-xMiddle, -yMiddle,  zMiddle], 
+            [width, height,     0], 
+            [width,      0,     0], 
+            [width, height, depth], 
+            [width,      0, depth], 
+            [    0, height,     0], 
+            [    0,      0,     0], 
+            [    0, height, depth], 
+            [    0,      0, depth], 
         ];
 
         const faces = [
