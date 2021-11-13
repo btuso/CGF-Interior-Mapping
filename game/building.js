@@ -1,12 +1,17 @@
 class Building {
 
-    constructor(position, direction, width, height, depth) {
+    constructor(position, direction, dimensions) {
         this.position = position;
         this.direction = direction;
-        this._createBuilding(width, height, depth);
+        this.dimensions = dimensions;
+        this._createBuilding(dimensions);
     };
 
-    _createBuilding(width, height, depth) {
+    _createBuilding(dimensions) {
+        const width = dimensions[0];
+        const height = dimensions[1];
+        const depth = dimensions[2];
+        
         const vertices = [
             [width, height,     0], 
             [width,      0,     0], 
@@ -60,6 +65,7 @@ class Building {
             vertices: this.vertexPositions, 
             direction: this.direction,
             position: this.position,
+            dimensions: this.dimensions,
         };
     };
 }

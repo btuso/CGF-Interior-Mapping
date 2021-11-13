@@ -22,6 +22,7 @@ class InteriorShader {
         this.worldTransformUniform = gl.getUniformLocation(this.program, 'worldTransform' );
         this.globalCameraPosUniform = gl.getUniformLocation( this.program, 'globalCameraPos');
         this.buildingDirectionUniform = gl.getUniformLocation( this.program, 'buildingDirection');
+        this.buildingDimensionsUniform = gl.getUniformLocation( this.program, 'buildingDimensions');
         
 		this.vertexPostion = gl.getAttribLocation( this.program, 'vertexPosition' );
 		this.vertexBuffer = gl.createBuffer();
@@ -36,6 +37,7 @@ class InteriorShader {
 		this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 
         this.buildingDirectionVector = objectData.direction;
+        this.buildingDimensionsVector = objectData.dimensions;
         this.worldTransformMatrix =  [
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -109,6 +111,7 @@ class InteriorShader {
         this.gl.uniformMatrix4fv(this.worldTransformUniform, false, this.worldTransformMatrix);
         this.gl.uniform3fv(this.globalCameraPosUniform, this.globalCameraPosVector);
         this.gl.uniform3fv(this.buildingDirectionUniform, this.buildingDirectionVector);        
+        this.gl.uniform3fv(this.buildingDimensionsUniform, this.buildingDimensionsVector);       
 		this.gl.bindBuffer( this.gl.ARRAY_BUFFER, this.vertexBuffer );
 		this.gl.enableVertexAttribArray( this.vertexPostion );
 		this.gl.vertexAttribPointer( this.vertexPostion, 3, this.gl.FLOAT, false, 0, 0 ); 
@@ -143,15 +146,19 @@ class InteriorShader {
 
         uniform vec3 globalCameraPos; 
         uniform vec3 buildingDirection;
+        uniform vec3 buildingDimensions;
 
         void main()
         {		
         
             float floorHeight = 1.0;
             float floorWidth = 1.0;
+            float floorDepth = 1.0;
             
             vec3 cameraDir = normalize(vertexGlobalCoord - globalCameraPos);
 
+
+            // ----------------- Y plane
 
             vec3 horizontalColor = vec3(1, 0, 0); // debug color
             float floorOffset = 0.0;
@@ -161,33 +168,71 @@ class InteriorShader {
                 horizontalColor = vec3(0, 0, 1); // debug color
             }
             
+            // If it's the top floor and we're looking downwards, don't show the floor
+            if (distance(buildingDimensions.y, vertexGlobalCoord.y) < 0.0001) {
+                floorOffset += 1.0;
+            }
+
+            // multiply by 1.00001 to get rid of precision errors from interpolation
             float floor = ceil((vertexGlobalCoord.y * 1.00001) / floorHeight) - floorOffset;
             vec3 pointInHorizontalPlane = vec3(0.0, floor * floorHeight, 0.0);
-            vec3 planeNormal = vec3(0.0, 1.0, 0.0);
-            float horizontalPlaneDistance = dot(pointInHorizontalPlane - globalCameraPos, planeNormal) / dot(cameraDir, planeNormal);
+            vec3 floorNormal = vec3(0.0, 1.0, 0.0);
+            float horizontalPlaneDistance = dot(pointInHorizontalPlane - globalCameraPos, floorNormal) / dot(cameraDir, floorNormal);
+
+            // ----------------- X plane
 
             vec3 xWallColor = vec3(0, 1, 0); // debug color
-            float wallOffset = 0.0;
+            float xWallOffset = 0.0;
             
             if (cameraDir.x <= 0.0) {
                 // If we're looking leftwards then we're looking at the left wall, not the right wall
-                wallOffset = 1.0;
+                xWallOffset = 1.0;
                 xWallColor = vec3(0, 1, 1); // debug color
             }
-            
 
+            // If it's the eastern wall and we're looking to the right, don't show the wall
+            if (distance(0.0, vertexGlobalCoord.x) < 0.0001 && cameraDir.x >= 0.0) {
+                xWallOffset -= 1.0;
+            } else if (distance(buildingDimensions.x, vertexGlobalCoord.x) < 0.0001 && cameraDir.x <= 0.0) { // the other case
+                xWallOffset += 1.0;
+            }
+    
             // multiply by 1.00001 to get rid of precision errors from interpolation
-            float currentWall = ceil((vertexGlobalCoord.x * 1.00001) / floorWidth) - wallOffset;
+            float currentXWall = ceil((vertexGlobalCoord.x * 1.00001) / floorWidth) - xWallOffset;        
+            vec3 pointInXWallPlane = vec3(currentXWall * floorWidth, 0.0, 0.0);
+            vec3 xWallNormal = vec3(-1.0, 0.0, 0.0); // TODO esto es lo que hay que cambiar por building direction?
+            float xWallDistance = dot(pointInXWallPlane - globalCameraPos, xWallNormal) / dot(cameraDir, xWallNormal);  
+     
+            // ----------------- Z plane
+
+
+            vec3 zWallColor = vec3(1, 1, 0); // debug color
+            float zWallOffset = 0.0;
+            if (cameraDir.z <= 0.0) {
+                zWallOffset = 1.0;
+                zWallColor = vec3(1, 0, 1); // debug color
+            }
             
-            vec3 pointInWallPlane = vec3(currentWall * floorWidth, 0.0, 0.0);
-            vec3 wallNormal = vec3(-1.0, 0.0, 0.0); // TODO esto es lo que hay que cambiar por building direction?
-            float wallDistance = dot(pointInWallPlane - globalCameraPos, wallNormal) / dot(cameraDir, wallNormal);  
+            // If it's the northern wall and we're looking south, don't show the wall
+            if (distance(buildingDimensions.z, vertexGlobalCoord.z) < 0.0001 && cameraDir.z <= 0.0) {
+                zWallOffset += 1.0;
+            } else if (distance(0.0, vertexGlobalCoord.z) < 0.0001 && cameraDir.z >= 0.0) { // the other case
+                zWallOffset -= 1.0;
+            }
+    
+            // multiply by 1.00001 to get rid of precision errors from interpolation
+            float currentZWall = ceil((vertexGlobalCoord.z * 1.00001) / floorDepth) - zWallOffset;        
+            vec3 pointInZWallPlane = vec3(0.0, 0.0, currentZWall * floorDepth);
+            vec3 zWallNormal = vec3(0, 0.0, -1.0); // TODO esto es lo que hay que cambiar por building direction?
+            float zWallDistance = dot(pointInZWallPlane - globalCameraPos, zWallNormal) / dot(cameraDir, zWallNormal);  
      
 
-            
+            float closestIntersection = min(horizontalPlaneDistance, min(xWallDistance, zWallDistance));
 
-            if (wallDistance < horizontalPlaneDistance) {
+            if (closestIntersection == xWallDistance) {
                 gl_FragColor = vec4(xWallColor, 1);
+            } else if (closestIntersection == zWallDistance) {
+                gl_FragColor = vec4(zWallColor, 1);
             } else {
                 gl_FragColor = vec4(horizontalColor, 1);
             }
