@@ -27,7 +27,36 @@ class InteriorShader {
 		this.vertexPostion = gl.getAttribLocation( this.program, 'vertexPosition' );
 		this.vertexBuffer = gl.createBuffer();
         this.initialized = true;
+        this.textureTest();
     };
+
+    textureTest() {
+        // Create a texture.
+        var texture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        
+        // Fill the texture with a 1x1 blue pixel.
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+        
+        // Asynchronously load an image
+        var image = new Image();
+        image.crossOrigin = "";
+        
+        //image.src = "https://btuso.com/bws.jpg";
+        //image.src = "resources/textures/ColorGrid.png";
+         image.src = 'https://i.imgur.com/vLppl5m.png'; // Color Grid
+        //image.src = 'https://i.imgur.com/dIu5T25.jpg';
+        
+        
+        let gl = this.gl;
+        image.addEventListener('load', function() {
+            console.log('IMAGE LOADEDDDDDDDDDD  ' + image)
+            // Now that the image has loaded make copy it to the texture.
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_2D);
+        });
+    }
 
     setData(objectData) {
         const vertices = objectData.vertices;
@@ -139,14 +168,13 @@ class InteriorShader {
     _FragmentShader = `
         precision highp float;
 
-        uniform float height;
-
         // Interior Mapping
         varying vec3 vertexGlobalCoord;
-
         uniform vec3 globalCameraPos; 
         uniform vec3 buildingDirection;
         uniform vec3 buildingDimensions;
+        
+        uniform sampler2D u_texture;
 
         void main()
         {		
@@ -231,10 +259,21 @@ class InteriorShader {
 
             if (closestIntersection == xWallDistance) {
                 gl_FragColor = vec4(xWallColor, 1);
+                //gl_FragColor = texture2D(u_texture, vec2(vertexGlobalCoord.x, vertexGlobalCoord.y));
             } else if (closestIntersection == zWallDistance) {
                 gl_FragColor = vec4(zWallColor, 1);
             } else {
-                gl_FragColor = vec4(horizontalColor, 1);
+                //gl_FragColor = vec4(horizontalColor, 1);
+                //gl_FragColor = texture2D(u_texture, vec2(vertexGlobalCoord.x, vertexGlobalCoord.y));
+
+
+                //gl_FragColor = vec4(abs(distance(vertexGlobalCoord, globalCameraPos) - horizontalPlaneDistance) / floorDepth, 0.0, 0.0, 1.0);
+                float distance = abs(distance(vertexGlobalCoord, globalCameraPos) - horizontalPlaneDistance) / floorDepth;
+
+                vec3 pointInPlane = cameraDir * horizontalPlaneDistance;
+                //gl_FragColor = vec4(abs(pointInPlane.z - vertexGlobalCoord.z), 0.0, 0.0, 1.0);
+                gl_FragColor = vec4(abs(vertexGlobalCoord.z) - 1.5, 0.0, 0.0, 1.0);
+
             }
              
             
