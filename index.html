@@ -3,15 +3,11 @@
 <head>
 <title> FCG 2021 - TP5</title>
 
+<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+<meta content="utf-8" http-equiv="encoding">
+
 <!-- estilo-->
 <link href="style.css" rel="stylesheet">
-
-<!-- Legacy -->
-<!-- 
-<script type="text/javascript" id="includedscript" src="project5.js"></script>
-<script type="text/javascript" id="includedscript" src="ejercicio.js"></script>
-<script type="text/javascript" src="objmesh.js"></script>
--->
 
 <!-- Util -->
 <script type="text/javascript" id="includedscript" src="util/math.js"></script> 
@@ -24,6 +20,7 @@
 <script type="text/javascript" id="includedscript" src="rendering/render.js"></script>
 <script type="text/javascript" id="includedscript" src="rendering/shaders/testShader.js"></script>
 <script type="text/javascript" id="includedscript" src="rendering/shaders/interiorShader.js"></script>
+<script type="text/javascript" id="includedscript" src="rendering/shaders/debugShader.js"></script>
 <script type="text/javascript" id="includedscript" src="rendering/shaders.js"></script>
 
 <!-- Game -->
@@ -42,18 +39,6 @@
     <div id="canvas-div">
         <canvas id="canvas"></canvas>
     </div>
-    <!-- menu y controles
-    <div id="controls-div">
-        <div id="controls">
-            <div class="control-group">
-                <div class="control">Modelo:<br/><input id="obj" type="file" onchange="LoadObj(this)" accept=".obj"/></div>
-                <div class="control">Textura:<br/><input id="texture" type="file" onchange="LoadTexture(this)" accept="image/*"/></div>
-            </div>
-            <div class="control-group">
-                <img id="texture-img" />
-            </div>
-        </div>
-    </div>
-    -->
+
 </body>
 </html>

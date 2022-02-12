@@ -27,7 +27,38 @@ class InteriorShader {
 		this.vertexPostion = gl.getAttribLocation( this.program, 'vertexPosition' );
 		this.vertexBuffer = gl.createBuffer();
         this.initialized = true;
+        this.textureTest();
     };
+
+    textureTest() {
+        // Create a texture.
+        var texture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+        
+        // Fill the texture with a 1x1 blue pixel.
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, 1, 1, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+        
+        // Asynchronously load an image
+        var image = new Image();
+        image.crossOrigin = "";
+        
+        // image.src = 'https://i.imgur.com/vLppl5m.png'; // Color Grid
+//        image.src = 'https://i.imgur.com/9D5F7TW.png'; // back
+//        image.src = 'https://i.imgur.com/YwQD3Sp.jpg'; // texture map
+        // image.src = 'https://i.imgur.com/ijxHsGN.png'; // single photo
+        image.src = 'https://i.imgur.com/WLYT9TK.jpg'; // combined 
+        
+        
+        
+        let gl = this.gl;
+        image.addEventListener('load', function() {
+            console.log('IMAGE LOADEDDDDDDDDDD  ' + image)
+            // Now that the image has loaded make copy it to the texture.
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_2D);
+        });
+    }
 
     setData(objectData) {
         const vertices = objectData.vertices;
@@ -139,14 +170,13 @@ class InteriorShader {
     _FragmentShader = `
         precision highp float;
 
-        uniform float height;
-
         // Interior Mapping
         varying vec3 vertexGlobalCoord;
-
         uniform vec3 globalCameraPos; 
         uniform vec3 buildingDirection;
         uniform vec3 buildingDimensions;
+        
+        uniform sampler2D u_texture;
 
         void main()
         {		
@@ -206,11 +236,11 @@ class InteriorShader {
             // ----------------- Z plane
 
 
-            vec3 zWallColor = vec3(1, 1, 0); // debug color
+            vec3 zWallColor = vec3(1, 0, 1); // debug color
             float zWallOffset = 0.0;
             if (cameraDir.z <= 0.0) {
                 zWallOffset = 1.0;
-                zWallColor = vec3(1, 0, 1); // debug color
+                zWallColor = vec3(1, 1, 0); // debug color
             }
             
             // If it's the northern wall and we're looking south, don't show the wall
@@ -230,11 +260,33 @@ class InteriorShader {
             float closestIntersection = min(horizontalPlaneDistance, min(xWallDistance, zWallDistance));
 
             if (closestIntersection == xWallDistance) {
-                gl_FragColor = vec4(xWallColor, 1);
+                vec3 pointInPlane = cameraDir * xWallDistance;
+                float yVal = -mod((cameraDir.y * xWallDistance) + globalCameraPos.y, 1.0); 
+                float xVal = mod((cameraDir.z * xWallDistance) + globalCameraPos.z, 1.0); 
+
+                xVal = (xVal / 4.0) + 0.25;
+                yVal = ((yVal + xWallColor.z) / 2.0);
+
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
             } else if (closestIntersection == zWallDistance) {
-                gl_FragColor = vec4(zWallColor, 1);
+
+                vec3 pointInPlane = cameraDir * zWallDistance;
+                float yVal = -mod((cameraDir.y * zWallDistance) + globalCameraPos.y, 1.0); 
+                float xVal = mod((cameraDir.x * zWallDistance) + globalCameraPos.x, 1.0); 
+                xVal = (xVal / 4.0);
+                yVal = ((yVal - zWallColor.z) / 2.0);
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
             } else {
-                gl_FragColor = vec4(horizontalColor, 1);
+                vec3 pointInPlane = cameraDir * horizontalPlaneDistance;
+                float yVal = -mod((cameraDir.x * horizontalPlaneDistance) + globalCameraPos.x, 1.0); 
+                float xVal = mod((cameraDir.z * horizontalPlaneDistance) + globalCameraPos.z, 1.0); 
+
+                xVal = (xVal / 4.0) + 0.5;
+                yVal = ((yVal + horizontalColor.z) / 2.0);
+
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
+              
+
             }
              
             

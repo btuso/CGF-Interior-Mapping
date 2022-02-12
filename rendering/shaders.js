@@ -16,9 +16,9 @@ function createShader(gl, type, source) {
     }
 
     return shader;
-  }
+}
 
-  function createProgram(gl, vertexShader, fragmentShader) {
+function createProgram(gl, vertexShader, fragmentShader) {
     var program = gl.createProgram();
     gl.attachShader(program, vertexShader);
     gl.attachShader(program, fragmentShader);
@@ -31,4 +31,4 @@ function createShader(gl, type, source) {
     }
     
     return program;
-  }
+}
