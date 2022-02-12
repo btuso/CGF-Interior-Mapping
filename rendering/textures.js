@@ -1,18 +1,13 @@
 const Textures = {
-    COLOR_GRID: '../resources/textures/ColorGrid.png',
+    // Textures will be loaded here at runtime
+    COLOR_GRID: '../resources/textures/ColorGrid.png', 
 };
 
-function loadTextures(gl, type, source) {
-    var shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-
-    if (!success) {
-        console.log(gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        throw Error('Shader could not be created');
+async function loadTextures() {
+    for (let texture of Object.keys(Textures)) {
+        const location = Textures[texture];
+        const image = new Image();
+        image.src = location;
+        Textures[texture] = image;
     }
-
-    return shader;
 }

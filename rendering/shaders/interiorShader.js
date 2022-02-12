@@ -42,10 +42,12 @@ class InteriorShader {
         var image = new Image();
         image.crossOrigin = "";
         
-        //image.src = "https://btuso.com/bws.jpg";
-        //image.src = "resources/textures/ColorGrid.png";
-         image.src = 'https://i.imgur.com/vLppl5m.png'; // Color Grid
-        //image.src = 'https://i.imgur.com/dIu5T25.jpg';
+        // image.src = 'https://i.imgur.com/vLppl5m.png'; // Color Grid
+//        image.src = 'https://i.imgur.com/9D5F7TW.png'; // back
+//        image.src = 'https://i.imgur.com/YwQD3Sp.jpg'; // texture map
+        // image.src = 'https://i.imgur.com/ijxHsGN.png'; // single photo
+        image.src = 'https://i.imgur.com/WLYT9TK.jpg'; // combined 
+        
         
         
         let gl = this.gl;
@@ -234,11 +236,11 @@ class InteriorShader {
             // ----------------- Z plane
 
 
-            vec3 zWallColor = vec3(1, 1, 0); // debug color
+            vec3 zWallColor = vec3(1, 0, 1); // debug color
             float zWallOffset = 0.0;
             if (cameraDir.z <= 0.0) {
                 zWallOffset = 1.0;
-                zWallColor = vec3(1, 0, 1); // debug color
+                zWallColor = vec3(1, 1, 0); // debug color
             }
             
             // If it's the northern wall and we're looking south, don't show the wall
@@ -258,21 +260,32 @@ class InteriorShader {
             float closestIntersection = min(horizontalPlaneDistance, min(xWallDistance, zWallDistance));
 
             if (closestIntersection == xWallDistance) {
-                gl_FragColor = vec4(xWallColor, 1);
-                //gl_FragColor = texture2D(u_texture, vec2(vertexGlobalCoord.x, vertexGlobalCoord.y));
+                vec3 pointInPlane = cameraDir * xWallDistance;
+                float yVal = -mod((cameraDir.y * xWallDistance) + globalCameraPos.y, 1.0); 
+                float xVal = mod((cameraDir.z * xWallDistance) + globalCameraPos.z, 1.0); 
+
+                xVal = (xVal / 4.0) + 0.25;
+                yVal = ((yVal + xWallColor.z) / 2.0);
+
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
             } else if (closestIntersection == zWallDistance) {
-                gl_FragColor = vec4(zWallColor, 1);
+
+                vec3 pointInPlane = cameraDir * zWallDistance;
+                float yVal = -mod((cameraDir.y * zWallDistance) + globalCameraPos.y, 1.0); 
+                float xVal = mod((cameraDir.x * zWallDistance) + globalCameraPos.x, 1.0); 
+                xVal = (xVal / 4.0);
+                yVal = ((yVal - zWallColor.z) / 2.0);
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
             } else {
-                //gl_FragColor = vec4(horizontalColor, 1);
-                //gl_FragColor = texture2D(u_texture, vec2(vertexGlobalCoord.x, vertexGlobalCoord.y));
-
-
-                //gl_FragColor = vec4(abs(distance(vertexGlobalCoord, globalCameraPos) - horizontalPlaneDistance) / floorDepth, 0.0, 0.0, 1.0);
-                float distance = abs(distance(vertexGlobalCoord, globalCameraPos) - horizontalPlaneDistance) / floorDepth;
-
                 vec3 pointInPlane = cameraDir * horizontalPlaneDistance;
-                //gl_FragColor = vec4(abs(pointInPlane.z - vertexGlobalCoord.z), 0.0, 0.0, 1.0);
-                gl_FragColor = vec4(abs(vertexGlobalCoord.z) - 1.5, 0.0, 0.0, 1.0);
+                float yVal = -mod((cameraDir.x * horizontalPlaneDistance) + globalCameraPos.x, 1.0); 
+                float xVal = mod((cameraDir.z * horizontalPlaneDistance) + globalCameraPos.z, 1.0); 
+
+                xVal = (xVal / 4.0) + 0.5;
+                yVal = ((yVal + horizontalColor.z) / 2.0);
+
+                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
+              
 
             }
              

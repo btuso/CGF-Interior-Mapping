@@ -3,6 +3,8 @@ let Render;
 let game;
 let previousFrameStart;
 
+const MAX_FRAMES_TO_RENDER = 3000;
+
 window.onload = function() {
     Render = new RenderingSystem(document, window); // TODO make sure the textures are loaded before starting the game loop!!!
     Input = new InputSystem(window, INPUT_MAP, Render.getScreenSize());
@@ -26,7 +28,7 @@ function processFrame(currentFrameStart) {
   //  console.log('Time between frames is: ' + delta + '  frame #'+ killswitch);
     
     killswitch++;
-    if (killswitch < 3000) 
+    if (killswitch < MAX_FRAMES_TO_RENDER) 
         window.requestAnimationFrame(processFrame);
 };
 

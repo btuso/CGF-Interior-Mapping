@@ -1,6 +1,6 @@
 class Building {
 
-    constructor(position, direction, dimensions) {
+    constructor({ position, direction, dimensions }) {
         this.position = position;
         this.direction = direction;
         this.dimensions = dimensions;
