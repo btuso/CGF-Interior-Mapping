@@ -169,123 +169,100 @@ class InteriorShader {
         
         uniform sampler2D u_texture;
 
+        // Returns true when looking to the "other side" of an axis
+        bool isAlternateWall(float cameraDirection) {
+            return cameraDirection <= 0.0;
+        }
+
+        // Returns the plane index for a vertex 
+        float planeForVertex(float vertexPos, float planeSpacing) {
+           // multiply by 1.00001 to get rid of precision errors from interpolation
+           return ceil((vertexPos * 1.00001) / planeSpacing); 
+        }
+
+        // Returns the offset from the current wall to the interior of the building. 
+        // i.e. will return 1 or -1 when the vertex is in an external wall
+        float calculateEdgeWallOffset(float cameraDirection, float vertexPos, float buildingSize) {
+            float edgeWallOffset = 0.0;
+            if (distance(0.0, vertexPos) < 0.0001 && !(isAlternateWall(cameraDirection))) {
+                edgeWallOffset -= 1.0;
+            } else if (distance(buildingSize, vertexPos) < 0.0001 && isAlternateWall(cameraDirection)) {
+                edgeWallOffset += 1.0;
+            }
+            return edgeWallOffset;
+        }
+
+        // Returns the raycasted distance from the camera to an imaginary plane inside the object
+        float distanceToPlane(vec3 globalCameraPos, float cameraDirection, float vertexPos, float buildingSize, float planeSpacing, vec3 planeNormal) 
+        {
+            float planeOffset = 0.0;   
+            if (isAlternateWall(cameraDirection)) {
+                // Offset the plane depending on the camera's view direction. 
+                // i.e. If we're looking leftwards then we're looking at the left wall, not the right wall
+                planeOffset = 1.0;
+            }
+
+            // Hide edge walls by offseting the plane
+            float edgeWallOffset = calculateEdgeWallOffset(cameraDirection, vertexPos, buildingSize);
+            float currentPlane = planeForVertex(vertexPos, planeSpacing);
+            float pointInPlane = (currentPlane - planeOffset - edgeWallOffset) * planeSpacing;
+            return dot(pointInPlane - globalCameraPos, planeNormal) / cameraDirection;
+        }
+
         void main()
         {		
-        
-            float floorHeight = 1.0;
-            float floorWidth = 1.0;
-            float floorDepth = 1.0;
+            // TODO this should be a uniform
+            float roomHeight = 1.0;
+            float roomWidth = 1.0;
+            float roomDepth = 1.0;
             
             vec3 cameraDir = normalize(vertexGlobalCoord - globalCameraPos);
 
-
-            // ----------------- Y plane
-
-            vec3 horizontalColor = vec3(1, 0, 0); // debug color
-            float floorOffset = 0.0;
-            if (cameraDir.y <= 0.0) {
-                // If we're looking downwards then we're looking at the floor, not the ceiling
-                floorOffset = 1.0;
-                horizontalColor = vec3(0, 0, 1); // debug color
-            }
-            
-            // If it's the top floor and we're looking downwards, don't show the floor
-            if (distance(buildingDimensions.y, vertexGlobalCoord.y) < 0.0001) {
-                floorOffset += 1.0;
-            }
-
-            // multiply by 1.00001 to get rid of precision errors from interpolation
-            float floorNr = ceil((vertexGlobalCoord.y * 1.00001) / floorHeight);
-            vec3 pointInHorizontalPlane = vec3(0.0, (floorNr - floorOffset) * floorHeight, 0.0);
             vec3 floorNormal = vec3(0.0, 1.0, 0.0);
-            float horizontalPlaneDistance = dot(pointInHorizontalPlane - globalCameraPos, floorNormal) / dot(cameraDir, floorNormal);
+            vec3 xWallNormal = vec3(1.0, 0.0, 0.0);
+            vec3 zWallNormal = vec3(0, 0.0, 1.0);
 
-            // ----------------- X plane
+            float yWallDistance = distanceToPlane(globalCameraPos, cameraDir.y, vertexGlobalCoord.y, buildingDimensions.y, roomHeight, floorNormal);
+            float xWallDistance = distanceToPlane(globalCameraPos, cameraDir.x, vertexGlobalCoord.x, buildingDimensions.x, roomWidth, xWallNormal);
+            float zWallDistance = distanceToPlane(globalCameraPos, cameraDir.z, vertexGlobalCoord.z, buildingDimensions.z, roomDepth, zWallNormal);
 
-            vec3 xWallColor = vec3(0, 1, 0); // debug color
-            float xWallOffset = 0.0;
-            
-            if (cameraDir.x <= 0.0) {
-                // If we're looking leftwards then we're looking at the left wall, not the right wall
-                xWallOffset = 1.0;
-                xWallColor = vec3(0, 1, 1); // debug color
-            }
+            float closestIntersection = min(yWallDistance, min(xWallDistance, zWallDistance));
+           
+            // Get walls and offsets to calculate which room we're rendering
+            float yWall = planeForVertex(vertexGlobalCoord.y, roomHeight);
+            float xWall = planeForVertex(vertexGlobalCoord.x, roomWidth);
+            float zWall = planeForVertex(vertexGlobalCoord.z, roomDepth);
+            float yEdgeOffset = calculateEdgeWallOffset(cameraDir.y, vertexGlobalCoord.y, buildingDimensions.y); 
+            float xEdgeOffset = calculateEdgeWallOffset(cameraDir.x, vertexGlobalCoord.x, buildingDimensions.x); 
+            float zEdgeOffset = calculateEdgeWallOffset(cameraDir.z, vertexGlobalCoord.z, buildingDimensions.z); 
+            // Rooms in the corners receive the same hash
+            float roomHash = ((yWall - yEdgeOffset) * 3.0) + ((zWall  + xWall - xEdgeOffset - zEdgeOffset) * 7.0);
+            float roomRandom = ceil(roomHash / randomSeed);
+            float yVal = 0.0;
+            float xVal = 0.0;
 
-            // If it's the eastern wall and we're looking to the right, don't show the wall
-            if (distance(0.0, vertexGlobalCoord.x) < 0.0001 && cameraDir.x >= 0.0) {
-                xWallOffset -= 1.0;
-            } else if (distance(buildingDimensions.x, vertexGlobalCoord.x) < 0.0001 && cameraDir.x <= 0.0) { // the other case
-                xWallOffset += 1.0;
-            }
-    
-            // multiply by 1.00001 to get rid of precision errors from interpolation
-            float currentXWall = ceil((vertexGlobalCoord.x * 1.00001) / floorWidth);        
-            vec3 pointInXWallPlane = vec3((currentXWall  - xWallOffset) * floorWidth, 0.0, 0.0);
-            vec3 xWallNormal = vec3(-1.0, 0.0, 0.0); // TODO esto es lo que hay que cambiar por building direction?
-            float xWallDistance = dot(pointInXWallPlane - globalCameraPos, xWallNormal) / dot(cameraDir, xWallNormal);  
-     
-            // ----------------- Z plane
-
-
-            vec3 zWallColor = vec3(1, 0, 1); // debug color
-            float zWallOffset = 0.0;
-            if (cameraDir.z <= 0.0) {
-                zWallOffset = 1.0;
-                zWallColor = vec3(1, 1, 0); // debug color
-            }
-            
-            // If it's the northern wall and we're looking south, don't show the wall
-            if (distance(buildingDimensions.z, vertexGlobalCoord.z) < 0.0001 && cameraDir.z <= 0.0) {
-                zWallOffset += 1.0;
-            } else if (distance(0.0, vertexGlobalCoord.z) < 0.0001 && cameraDir.z >= 0.0) { // the other case
-                zWallOffset -= 1.0;
-            }
-    
-            // multiply by 1.00001 to get rid of precision errors from interpolation
-            float currentZWall = ceil((vertexGlobalCoord.z * 1.00001) / floorDepth);        
-            vec3 pointInZWallPlane = vec3(0.0, 0.0, (currentZWall - zWallOffset) * floorDepth);
-            vec3 zWallNormal = vec3(0, 0.0, -1.0); // TODO esto es lo que hay que cambiar por building direction?
-            float zWallDistance = dot(pointInZWallPlane - globalCameraPos, zWallNormal) / dot(cameraDir, zWallNormal);  
-     
-
-            float closestIntersection = min(horizontalPlaneDistance, min(xWallDistance, zWallDistance));
-
-            float amount_of_textures = 2.0;
+            // Calculate which texture to show, depending on the closest wall (the one being rendered)
             if (closestIntersection == xWallDistance) {
-                vec3 pointInPlane = cameraDir * xWallDistance;
-                float yVal = -mod((cameraDir.y * xWallDistance) + globalCameraPos.y, 1.0); 
-                float xVal = mod((cameraDir.z * xWallDistance) + globalCameraPos.z, 1.0); 
+                yVal = -mod((cameraDir.y * closestIntersection) + globalCameraPos.y, 1.0); 
+                xVal = mod((cameraDir.z * closestIntersection) + globalCameraPos.z, 1.0); 
 
                 xVal = (xVal / 4.0) + 0.25;
-                yVal = ((yVal - xWallColor.z) / 2.0) / roomVariations + (ceil(((floorNr * 3.0) + (currentZWall * 7.0) + (currentXWall * 7.0)) / randomSeed) / roomVariations);
-
-                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
-                
+                yVal = (((yVal - float(isAlternateWall(cameraDir.x))) / 2.0) + roomRandom) / roomVariations;
             } else if (closestIntersection == zWallDistance) {
+                yVal = -mod((cameraDir.y * closestIntersection) + globalCameraPos.y, 1.0); 
+                xVal = mod((cameraDir.x * closestIntersection) + globalCameraPos.x, 1.0); 
 
-                vec3 pointInPlane = cameraDir * zWallDistance;
-                float yVal = -mod((cameraDir.y * zWallDistance) + globalCameraPos.y, 1.0); 
-                float xVal = mod((cameraDir.x * zWallDistance) + globalCameraPos.x, 1.0); 
                 xVal = (xVal / 4.0);
-                yVal = (((yVal - zWallColor.z) / 2.0) / roomVariations) + (ceil(((floorNr * 3.0) + (currentZWall * 7.0) + (currentXWall * 7.0)) / randomSeed) / roomVariations);
-                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
-
+                yVal = (((yVal - float(isAlternateWall(cameraDir.z))) / 2.0) + roomRandom) / roomVariations;
             } else {
-                vec3 pointInPlane = cameraDir * horizontalPlaneDistance;
-                float yVal = -mod((cameraDir.x * horizontalPlaneDistance) + globalCameraPos.x, 1.0); 
-                float xVal = mod((cameraDir.z * horizontalPlaneDistance) + globalCameraPos.z, 1.0); 
+                yVal = -mod((cameraDir.x * closestIntersection) + globalCameraPos.x, 1.0); 
+                xVal = mod((cameraDir.z * closestIntersection) + globalCameraPos.z, 1.0); 
 
                 xVal = (xVal / 4.0) + 0.5;
-                yVal = ((yVal - horizontalColor.z) / 2.0) / roomVariations + (ceil(((floorNr * 3.0) + (currentZWall * 7.0) + (currentXWall * 7.0)) / randomSeed) / roomVariations);
-
-                gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
-                
-                
+                yVal = (((yVal - float(isAlternateWall(cameraDir.y))) / 2.0) + roomRandom) / roomVariations;
             }
-         //   gl_FragColor = vec4(0,0,mod((ceil(((floorNr * 3.0) + (currentZWall * 7.0) + (currentXWall * 7.0)) / 2.0 ) / roomVariations), 1.0),1.0);
-             
-            
-            
+
+            gl_FragColor = texture2D(u_texture, vec2(xVal, yVal));
         }
     `; 
 }
